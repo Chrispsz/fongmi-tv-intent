@@ -12,7 +12,7 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
-    timeout-minutes: 120
+    timeout-minutes: 90
     
     steps:
     - name: Checkout this repo (patch files)
@@ -54,25 +54,45 @@ jobs:
         cp ../fongmi-intent-patch/ExternalPlayActivity.java app/src/main/java/com/fongmi/android/tv/ui/activity/
         
         echo "=== Patch Applied ==="
-        echo "Modified files:"
-        echo "- app/src/main/AndroidManifest.xml (intent filters added)"
-        echo "- app/src/main/java/com/fongmi/android/tv/ui/activity/ExternalPlayActivity.java (new)"
+        
+    - name: Configure for v7a only (lighter build)
+      working-directory: fongmi-source
+      run: |
+        # Configurar build apenas para armeabi-v7a
+        cat >> app/build.gradle << 'GRADLE'
+
+        // Force v7a only for lighter APK
+        android {
+            defaultConfig {
+                ndk {
+                    abiFilters 'armeabi-v7a'
+                }
+            }
+            splits {
+                abi {
+                    enable false
+                }
+            }
+        }
+        GRADLE
+        
+        echo "Configured for armeabi-v7a only"
         
     - name: Build Debug APK
       working-directory: fongmi-source
-      run: ./gradlew assembleDebug --no-daemon --stacktrace
+      run: ./gradlew assembleDebug --no-daemon -Parm64-v8a=false -Px86=false -Px86_64=false
       
     - name: Rename APK
       working-directory: fongmi-source
       run: |
         cd app/build/outputs/apk/debug/
-        mv *.apk fongmi-tv-intent-debug.apk || true
+        mv *.apk fongmi-tv-intent-v7a-debug.apk || true
         ls -la
       
     - name: Upload Debug APK
       uses: actions/upload-artifact@v4
       with:
-        name: fongmi-tv-intent-debug
+        name: fongmi-tv-intent-v7a
         path: fongmi-source/app/build/outputs/apk/debug/*.apk
         retention-days: 30
         
