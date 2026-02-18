@@ -57,30 +57,19 @@ jobs:
         
         echo "=== Patch Applied ==="
         
-    - name: Configure v7a only
-      working-directory: fongmi-source
-      run: |
-        # Modificar o build.gradle para compilar apenas v7a
-        sed -i "s/abiFilters.*$/abiFilters 'armeabi-v7a'/g" app/build.gradle || true
-        
-        echo "Configured for armeabi-v7a only"
-        
-    - name: Build Debug APK (v7a)
+    - name: Build Debug APK
       working-directory: fongmi-source
       run: ./gradlew assembleDebug --no-daemon
-      env:
-        PYTHON_PATH: /opt/hostedtoolcache/Python/3.10.x/x64/bin/python3.10
       
-    - name: Rename APK
+    - name: List APK files
       working-directory: fongmi-source
       run: |
-        cd app/build/outputs/apk/debug/
-        ls -la
-        mv *.apk fongmi-tv-intent-v7a.apk || true
+        echo "=== APK Output ==="
+        find app/build/outputs -name "*.apk" -exec ls -lh {} \;
       
     - name: Upload APK
       uses: actions/upload-artifact@v4
       with:
-        name: fongmi-tv-intent-v7a
-        path: fongmi-source/app/build/outputs/apk/debug/*.apk
+        name: fongmi-tv-intent-apk
+        path: fongmi-source/app/build/outputs/apk/**/*.apk
         retention-days: 30
