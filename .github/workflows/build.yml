@@ -41,21 +41,24 @@ jobs:
       working-directory: fongmi-source
       run: chmod +x gradlew
       
-    - name: Apply Intent Patch
+    - name: Apply Intent Patch + Pre-configured Settings
       working-directory: fongmi-source
       run: |
-        echo "=== Applying Intent Patch ==="
+        echo "=== Applying Patches ==="
         
-        # Apply patched AndroidManifest.xml
+        # 1. AndroidManifest.xml (intent support)
         cp ../fongmi-intent-patch/AndroidManifest.xml app/src/main/AndroidManifest.xml
         
-        # Create directory for ExternalPlayActivity
+        # 2. ExternalPlayActivity.java (receive intents)
         mkdir -p app/src/main/java/com/fongmi/android/tv/ui/activity/
-        
-        # Add ExternalPlayActivity.java
         cp ../fongmi-intent-patch/ExternalPlayActivity.java app/src/main/java/com/fongmi/android/tv/ui/activity/
         
-        echo "=== Patch Applied ==="
+        # 3. Setting.java (pre-configured for TV Box)
+        cp ../fongmi-intent-patch/Setting.java app/src/main/java/com/fongmi/android/tv/
+        
+        echo "=== Patches Applied ==="
+        echo "- Intent support: ExternalPlayActivity.java"
+        echo "- Pre-configured: Buffer=4s, Tunnel=ON, Scale=16:9, AAC=ON"
         
     - name: Build Debug APK
       working-directory: fongmi-source
