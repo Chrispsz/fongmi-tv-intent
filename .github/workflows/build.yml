@@ -7,7 +7,7 @@ on:
     branches: [ main ]
   workflow_dispatch:
   schedule:
-    - cron: '0 0 * * 0'  # Weekly build
+    - cron: '0 0 * * 0'
 
 jobs:
   build:
@@ -32,6 +32,11 @@ jobs:
         distribution: 'temurin'
         cache: gradle
         
+    - name: Set up Python 3.10
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.10'
+        
     - name: Grant execute permission for gradlew
       working-directory: fongmi-source
       run: chmod +x gradlew
@@ -40,9 +45,6 @@ jobs:
       working-directory: fongmi-source
       run: |
         echo "=== Applying Intent Patch ==="
-        
-        # Backup original AndroidManifest.xml
-        cp app/src/main/AndroidManifest.xml app/src/main/AndroidManifest.xml.bak
         
         # Apply patched AndroidManifest.xml
         cp ../fongmi-intent-patch/AndroidManifest.xml app/src/main/AndroidManifest.xml
@@ -55,51 +57,30 @@ jobs:
         
         echo "=== Patch Applied ==="
         
-    - name: Configure for v7a only (lighter build)
+    - name: Configure v7a only
       working-directory: fongmi-source
       run: |
-        # Configurar build apenas para armeabi-v7a
-        cat >> app/build.gradle << 'GRADLE'
-
-        // Force v7a only for lighter APK
-        android {
-            defaultConfig {
-                ndk {
-                    abiFilters 'armeabi-v7a'
-                }
-            }
-            splits {
-                abi {
-                    enable false
-                }
-            }
-        }
-        GRADLE
+        # Modificar o build.gradle para compilar apenas v7a
+        sed -i "s/abiFilters.*$/abiFilters 'armeabi-v7a'/g" app/build.gradle || true
         
         echo "Configured for armeabi-v7a only"
         
-    - name: Build Debug APK
+    - name: Build Debug APK (v7a)
       working-directory: fongmi-source
-      run: ./gradlew assembleDebug --no-daemon -Parm64-v8a=false -Px86=false -Px86_64=false
+      run: ./gradlew assembleDebug --no-daemon
+      env:
+        PYTHON_PATH: /opt/hostedtoolcache/Python/3.10.x/x64/bin/python3.10
       
     - name: Rename APK
       working-directory: fongmi-source
       run: |
         cd app/build/outputs/apk/debug/
-        mv *.apk fongmi-tv-intent-v7a-debug.apk || true
         ls -la
+        mv *.apk fongmi-tv-intent-v7a.apk || true
       
-    - name: Upload Debug APK
+    - name: Upload APK
       uses: actions/upload-artifact@v4
       with:
         name: fongmi-tv-intent-v7a
         path: fongmi-source/app/build/outputs/apk/debug/*.apk
         retention-days: 30
-        
-    - name: Create Release on tag
-      if: startsWith(github.ref, 'refs/tags/')
-      uses: softprops/action-gh-release@v1
-      with:
-        files: fongmi-source/app/build/outputs/apk/debug/*.apk
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
