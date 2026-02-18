@@ -1,0 +1,85 @@
+name: Build FongMi TV with Intent Support
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+  workflow_dispatch:
+  schedule:
+    - cron: '0 0 * * 0'  # Weekly build
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    
+    steps:
+    - name: Checkout this repo (patch files)
+      uses: actions/checkout@v4
+      
+    - name: Checkout FongMi TV source
+      uses: actions/checkout@v4
+      with:
+        repository: FongMi/TV
+        ref: release
+        path: fongmi-source
+        
+    - name: Set up JDK 17
+      uses: actions/setup-java@v4
+      with:
+        java-version: '17'
+        distribution: 'temurin'
+        cache: gradle
+        
+    - name: Grant execute permission for gradlew
+      working-directory: fongmi-source
+      run: chmod +x gradlew
+      
+    - name: Apply Intent Patch
+      working-directory: fongmi-source
+      run: |
+        echo "=== Applying Intent Patch ==="
+        
+        # Backup original AndroidManifest.xml
+        cp app/src/main/AndroidManifest.xml app/src/main/AndroidManifest.xml.bak
+        
+        # Apply patched AndroidManifest.xml
+        cp ../fongmi-intent-patch/AndroidManifest.xml app/src/main/AndroidManifest.xml
+        
+        # Create directory for ExternalPlayActivity
+        mkdir -p app/src/main/java/com/fongmi/android/tv/ui/activity/
+        
+        # Add ExternalPlayActivity.java
+        cp ../fongmi-intent-patch/ExternalPlayActivity.java app/src/main/java/com/fongmi/android/tv/ui/activity/
+        
+        echo "=== Patch Applied ==="
+        echo "Modified files:"
+        echo "- app/src/main/AndroidManifest.xml (intent filters added)"
+        echo "- app/src/main/java/com/fongmi/android/tv/ui/activity/ExternalPlayActivity.java (new)"
+        
+    - name: Build Debug APK
+      working-directory: fongmi-source
+      run: ./gradlew assembleDebug --no-daemon --stacktrace
+      
+    - name: Rename APK
+      working-directory: fongmi-source
+      run: |
+        cd app/build/outputs/apk/debug/
+        mv *.apk fongmi-tv-intent-debug.apk || true
+        ls -la
+      
+    - name: Upload Debug APK
+      uses: actions/upload-artifact@v4
+      with:
+        name: fongmi-tv-intent-debug
+        path: fongmi-source/app/build/outputs/apk/debug/*.apk
+        retention-days: 30
+        
+    - name: Create Release on tag
+      if: startsWith(github.ref, 'refs/tags/')
+      uses: softprops/action-gh-release@v1
+      with:
+        files: fongmi-source/app/build/outputs/apk/debug/*.apk
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
