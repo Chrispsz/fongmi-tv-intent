@@ -44,7 +44,6 @@ jobs:
     - name: Apply Minimalist Patches
       working-directory: fongmi-source
       run: |
-        echo "Applying patches..."
         cp ../fongmi-intent-patch/AndroidManifest.xml app/src/main/AndroidManifest.xml
         mkdir -p app/src/main/java/com/fongmi/android/tv/ui/activity/
         cp ../fongmi-intent-patch/ExternalPlayActivity.java app/src/main/java/com/fongmi/android/tv/ui/activity/
@@ -53,22 +52,10 @@ jobs:
         find app/src/main/res -name "*.ttf" -delete 2>/dev/null || true
         find app/src/main/res -name "*.otf" -delete 2>/dev/null || true
 
-    - name: Enable ProGuard minification
+    - name: Build v7a Release APK (with ProGuard)
       working-directory: fongmi-source
       run: |
-        python3 -c "
-        import re
-        with open('app/build.gradle', 'r') as f:
-            content = f.read()
-        content = re.sub(r'(release \{[^}]+\})', r'\\1\\n        debug {\\n            minifyEnabled true\\n            shrinkResources true\\n            proguardFiles getDefaultProguardFile(\"proguard-android-optimize.txt\"), \"proguard-rules.pro\"\\n        }', content)
-        with open('app/build.gradle', 'w') as f:
-            f.write(content)
-        print('Added debug buildType with minification')
-        "
-
-    - name: Build v7a APK with ProGuard
-      working-directory: fongmi-source
-      run: ./gradlew assembleLeanbackArmeabi_v7aDebug --no-daemon 2>&1 | tail -40
+        ./gradlew assembleLeanbackArmeabi_v7aRelease --no-daemon 2>&1 | tail -40
 
     - name: Show APK Size
       working-directory: fongmi-source
