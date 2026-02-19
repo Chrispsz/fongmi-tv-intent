@@ -52,10 +52,10 @@ jobs:
         find app/src/main/res -name "*.ttf" -delete 2>/dev/null || true
         find app/src/main/res -name "*.otf" -delete 2>/dev/null || true
 
-    - name: Build v7a Release APK (with ProGuard)
+    - name: Build v7a Release APK (unsigned, with ProGuard)
       working-directory: fongmi-source
       run: |
-        ./gradlew assembleLeanbackArmeabi_v7aRelease --no-daemon 2>&1 | tail -40
+        ./gradlew assembleLeanbackArmeabi_v7aRelease -x validateSigningLeanbackArmeabi_v7aRelease --no-daemon 2>&1 | tail -50
 
     - name: Show APK Size
       working-directory: fongmi-source
