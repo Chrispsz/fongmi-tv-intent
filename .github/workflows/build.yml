@@ -13,62 +13,69 @@ jobs:
   build:
     runs-on: ubuntu-latest
     timeout-minutes: 90
-    
+
     steps:
     - name: Checkout this repo (patch files)
       uses: actions/checkout@v4
-      
+
     - name: Checkout FongMi TV source
       uses: actions/checkout@v4
       with:
         repository: FongMi/TV
         ref: release
         path: fongmi-source
-        
+
     - name: Set up JDK 17
       uses: actions/setup-java@v4
       with:
         java-version: '17'
         distribution: 'temurin'
         cache: gradle
-        
+
     - name: Set up Python 3.10
       uses: actions/setup-python@v5
       with:
         python-version: '3.10'
-        
+
     - name: Grant execute permission for gradlew
       working-directory: fongmi-source
       run: chmod +x gradlew
-      
+
     - name: Apply Minimalist Patches
       working-directory: fongmi-source
       run: |
-        echo "=========================================="
+        echo "=============================================="
         echo "  FongMi TV Minimalist - v7a Only Build"
-        echo "=========================================="
-        
+        echo "  PURE M3U8 PLAYER - No Extras"
+        echo "=============================================="
+
         # 1. AndroidManifest.xml (intent support + remove cast)
-        echo "[1/5] Applying AndroidManifest.xml patch..."
+        echo "[1/6] Applying AndroidManifest.xml patch..."
         cp ../fongmi-intent-patch/AndroidManifest.xml app/src/main/AndroidManifest.xml
-        
+
         # 2. ExternalPlayActivity.java (receive intents)
-        echo "[2/5] Creating ExternalPlayActivity..."
+        echo "[2/6] Creating ExternalPlayActivity..."
         mkdir -p app/src/main/java/com/fongmi/android/tv/ui/activity/
         cp ../fongmi-intent-patch/ExternalPlayActivity.java app/src/main/java/com/fongmi/android/tv/ui/activity/
-        
+
         # 3. Setting.java (pre-configured for TV Box)
-        echo "[3/5] Applying optimized Settings..."
+        echo "[3/6] Applying optimized Settings..."
         cp ../fongmi-intent-patch/Setting.java app/src/main/java/com/fongmi/android/tv/
-        
+
         # 4. ProGuard rules (strip unused code)
-        echo "[4/5] Applying ProGuard rules..."
+        echo "[4/6] Applying ProGuard rules..."
         cp ../fongmi-intent-patch/proguard-rules.pro app/proguard-rules.pro
-        
-        # 5. Modify build.gradle for v7a-only + minimal build
-        echo "[5/5] Configuring v7a-only minimal build..."
-        
-        # Add v7a-only configuration to build.gradle
+
+        # 5. Remove subtitle resources (fonts, .srt parsers not needed)
+        echo "[5/6] Removing subtitle and unused resources..."
+        find app/src/main/res -name "*.ttf" -delete 2>/dev/null || true
+        find app/src/main/res -name "*.otf" -delete 2>/dev/null || true
+        find app/src/main -name "*subtitle*" -type f -delete 2>/dev/null || true
+        find app/src/main -name "*danmaku*" -type f -delete 2>/dev/null || true
+
+        # 6. Modify build.gradle for v7a-only + minimal build
+        echo "[6/6] Configuring v7a-only minimal build..."
+
         cat >> app/build.gradle << 'GRADLE_EOF'
 
 // === MINIMALIST BUILD CONFIGURATION ===
@@ -81,12 +88,12 @@ android {
         // English only
         resConfigs "en"
     }
-    
-    // Exclude Chinese and unused resources
+
+    // Exclude Chinese, subtitles, unused resources
     androidResources {
-        ignoreAssetsPattern '!zh:!*zh*:!*CN*:!*cn*:!drawable-hdpi:!drawable-xhdpi'
+        ignoreAssetsPattern '!zh:!*zh*:!*CN*:!*cn*:!*.ttf:!*.otf:!drawable-hdpi:!drawable-xhdpi'
     }
-    
+
     // Aggressive optimization
     buildTypes {
         debug {
@@ -97,38 +104,51 @@ android {
     }
 }
 GRADLE_EOF
-        
+
         echo ""
-        echo "=========================================="
+        echo "=============================================="
         echo "  Patches Applied Successfully!"
-        echo "=========================================="
+        echo "=============================================="
         echo "✓ Intent support: ExternalPlayActivity.java"
         echo "✓ Pre-configured: Buffer=4s, Tunnel=ON, Scale=16:9, AAC=ON"
         echo "✓ v7a-only: Smaller APK, works on all devices"
         echo "✓ ProGuard: Strip unused code"
         echo "✓ Resources: English only, no Chinese"
-        echo "✓ Removed: Cast, Danmaku, Spiders, P2P"
-        echo "=========================================="
-        
+        echo ""
+        echo "REMOVED:"
+        echo "  ✗ Cast/Chromecast"
+        echo "  ✗ Danmaku (Chinese comments)"
+        echo "  ✗ Subtitle system (.srt, .ass, fonts)"
+        echo "  ✗ Spiders, P2P, Torrent"
+        echo "  ✗ EPG, Update checker"
+        echo ""
+        echo "KEPT:"
+        echo "  ✓ ExoPlayer core"
+        echo "  ✓ HTTP streaming"
+        echo "  ✓ M3U8 parser"
+        echo "  ✓ Video decoders"
+        echo "  ✓ Closed Caption (embedded in stream)"
+        echo "=============================================="
+
     - name: Build Minimal APK
       working-directory: fongmi-source
       run: |
         echo "Building minimal v7a APK..."
         ./gradlew assembleDebug --no-daemon --warning-mode=all
-      
+
     - name: Show APK Size
       working-directory: fongmi-source
       run: |
         echo ""
-        echo "=========================================="
+        echo "=============================================="
         echo "  Build Complete!"
-        echo "=========================================="
+        echo "=============================================="
         find app/build/outputs -name "*.apk" -exec ls -lh {} \;
         echo ""
         APK_SIZE=$(du -h app/build/outputs/apk/debug/*.apk | cut -f1)
         echo "Final APK Size: $APK_SIZE"
-        echo "=========================================="
-      
+        echo "=============================================="
+
     - name: Upload APK
       uses: actions/upload-artifact@v4
       with:
