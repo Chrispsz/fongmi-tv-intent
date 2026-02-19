@@ -45,7 +45,7 @@ jobs:
       working-directory: fongmi-source
       run: |
         echo "=============================================="
-        echo "  FongMi TV Minimalist - v7a Only Build"
+        echo "  FongMi TV Minimalist - v7a Only"
         echo "=============================================="
 
         # Copy patch files
@@ -59,21 +59,33 @@ jobs:
         find app/src/main/res -name "*.ttf" -delete 2>/dev/null || true
         find app/src/main/res -name "*.otf" -delete 2>/dev/null || true
 
-        # Enable minification in build.gradle using Python
+        # Add debug buildType with minification enabled
         python3 << 'EOF'
-        import re
-
         with open('app/build.gradle', 'r') as f:
             content = f.read()
 
-        # Enable minify for all buildTypes
-        content = re.sub(r'minifyEnabled\s+false', 'minifyEnabled true', content)
-        content = re.sub(r'shrinkResources\s+false', 'shrinkResources true', content)
+        # Add debug buildType with minification after release block
+        debug_block = '''        debug {
+            minifyEnabled true
+            shrinkResources true
+            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+        }
+    }'''
+
+        # Find and replace the release block closure
+        import re
+        # Add debug before the closing brace of buildTypes
+        content = re.sub(
+            r"(release \{[^}]+\})\s*\}",
+            r"\1\n" + debug_block,
+            content,
+            count=1
+        )
 
         with open('app/build.gradle', 'w') as f:
             f.write(content)
 
-        print("build.gradle modified: minifyEnabled=true, shrinkResources=true")
+        print("Added debug buildType with minifyEnabled=true")
         EOF
 
         echo "=============================================="
@@ -81,7 +93,7 @@ jobs:
     - name: Build v7a APK with ProGuard
       working-directory: fongmi-source
       run: |
-        ./gradlew assembleLeanbackArmeabi_v7aDebug --no-daemon 2>&1 | tail -30
+        ./gradlew assembleLeanbackArmeabi_v7aDebug --no-daemon 2>&1 | tail -40
 
     - name: Show APK Size
       working-directory: fongmi-source
