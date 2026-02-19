@@ -51,11 +51,11 @@ jobs:
         cp ../fongmi-intent-patch/proguard-rules.pro app/proguard-rules.pro
         find app/src/main/res -name "*.ttf" -delete 2>/dev/null || true
         find app/src/main/res -name "*.otf" -delete 2>/dev/null || true
+        echo "Patches applied!"
 
-    - name: Build v7a Release APK (unsigned, with ProGuard)
+    - name: Build v7a Debug APK
       working-directory: fongmi-source
-      run: |
-        ./gradlew assembleLeanbackArmeabi_v7aRelease -x validateSigningLeanbackArmeabi_v7aRelease --no-daemon 2>&1 | tail -50
+      run: ./gradlew assembleLeanbackArmeabi_v7aDebug --no-daemon 2>&1 | tail -30
 
     - name: Show APK Size
       working-directory: fongmi-source
