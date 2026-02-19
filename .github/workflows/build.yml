@@ -49,61 +49,44 @@ jobs:
         echo "  PURE M3U8 PLAYER - No Extras"
         echo "=============================================="
 
-        # 1. AndroidManifest.xml (intent support + remove cast)
         echo "[1/6] Applying AndroidManifest.xml patch..."
         cp ../fongmi-intent-patch/AndroidManifest.xml app/src/main/AndroidManifest.xml
 
-        # 2. ExternalPlayActivity.java (receive intents)
         echo "[2/6] Creating ExternalPlayActivity..."
         mkdir -p app/src/main/java/com/fongmi/android/tv/ui/activity/
         cp ../fongmi-intent-patch/ExternalPlayActivity.java app/src/main/java/com/fongmi/android/tv/ui/activity/
 
-        # 3. Setting.java (pre-configured for TV Box)
         echo "[3/6] Applying optimized Settings..."
         cp ../fongmi-intent-patch/Setting.java app/src/main/java/com/fongmi/android/tv/
 
-        # 4. ProGuard rules (strip unused code)
         echo "[4/6] Applying ProGuard rules..."
         cp ../fongmi-intent-patch/proguard-rules.pro app/proguard-rules.pro
 
-        # 5. Remove subtitle resources (fonts, .srt parsers not needed)
         echo "[5/6] Removing subtitle and unused resources..."
         find app/src/main/res -name "*.ttf" -delete 2>/dev/null || true
         find app/src/main/res -name "*.otf" -delete 2>/dev/null || true
         find app/src/main -name "*subtitle*" -type f -delete 2>/dev/null || true
         find app/src/main -name "*danmaku*" -type f -delete 2>/dev/null || true
 
-        # 6. Modify build.gradle for v7a-only + minimal build
         echo "[6/6] Configuring v7a-only minimal build..."
-
-        cat >> app/build.gradle << 'GRADLE_EOF'
-
-// === MINIMALIST BUILD CONFIGURATION ===
-android {
-    // Only compile armeabi-v7a (works on 32-bit AND 64-bit devices)
-    defaultConfig {
-        ndk {
-            abiFilters 'armeabi-v7a'
-        }
-        // English only
-        resConfigs "en"
-    }
-
-    // Exclude Chinese, subtitles, unused resources
-    androidResources {
-        ignoreAssetsPattern '!zh:!*zh*:!*CN*:!*cn*:!*.ttf:!*.otf:!drawable-hdpi:!drawable-xhdpi'
-    }
-
-    // Aggressive optimization
-    buildTypes {
-        debug {
-            minifyEnabled true
-            shrinkResources true
-            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
-        }
-    }
-}
-GRADLE_EOF
+        echo "" >> app/build.gradle
+        echo "// === MINIMALIST BUILD CONFIGURATION ===" >> app/build.gradle
+        echo "android {" >> app/build.gradle
+        echo "    defaultConfig {" >> app/build.gradle
+        echo "        ndk { abiFilters 'armeabi-v7a' }" >> app/build.gradle
+        echo '        resConfigs "en"' >> app/build.gradle
+        echo "    }" >> app/build.gradle
+        echo "    androidResources {" >> app/build.gradle
+        echo "        ignoreAssetsPattern '!zh:!*zh*:!*CN*:!*cn*:!*.ttf:!*.otf'" >> app/build.gradle
+        echo "    }" >> app/build.gradle
+        echo "    buildTypes {" >> app/build.gradle
+        echo "        debug {" >> app/build.gradle
+        echo "            minifyEnabled true" >> app/build.gradle
+        echo "            shrinkResources true" >> app/build.gradle
+        echo "            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'" >> app/build.gradle
+        echo "        }" >> app/build.gradle
+        echo "    }" >> app/build.gradle
+        echo "}" >> app/build.gradle
 
         echo ""
         echo "=============================================="
