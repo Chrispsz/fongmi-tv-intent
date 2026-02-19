@@ -46,47 +46,38 @@ jobs:
       run: |
         echo "=============================================="
         echo "  FongMi TV Minimalist - v7a Only Build"
-        echo "  WITH PROGUARD OPTIMIZATION"
         echo "=============================================="
 
         # 1. AndroidManifest.xml
-        echo "[1/5] Applying AndroidManifest.xml..."
+        echo "[1/4] Applying AndroidManifest.xml..."
         cp ../fongmi-intent-patch/AndroidManifest.xml app/src/main/AndroidManifest.xml
 
         # 2. ExternalPlayActivity
-        echo "[2/5] Creating ExternalPlayActivity..."
+        echo "[2/4] Creating ExternalPlayActivity..."
         mkdir -p app/src/main/java/com/fongmi/android/tv/ui/activity/
         cp ../fongmi-intent-patch/ExternalPlayActivity.java app/src/main/java/com/fongmi/android/tv/ui/activity/
 
         # 3. Pre-configured Settings
-        echo "[3/5] Applying optimized Settings..."
+        echo "[3/4] Applying optimized Settings..."
         cp ../fongmi-intent-patch/Setting.java app/src/main/java/com/fongmi/android/tv/
 
-        # 4. ProGuard rules (with xpp3 fix)
-        echo "[4/5] Applying ProGuard rules..."
+        # 4. ProGuard rules
+        echo "[4/4] Applying ProGuard rules..."
         cp ../fongmi-intent-patch/proguard-rules.pro app/proguard-rules.pro
 
-        # 5. Remove resources and configure build
-        echo "[5/5] Configuring v7a + minification..."
+        # Remove font files
         find app/src/main/res -name "*.ttf" -delete 2>/dev/null || true
         find app/src/main/res -name "*.otf" -delete 2>/dev/null || true
-        find app/src/main -name "*danmaku*" -type f -delete 2>/dev/null || true
 
-        # Modify build.gradle for v7a + minifyEnabled
-        sed -i 's/abiFilters .*/abiFilters "armeabi-v7a"/g' app/build.gradle || true
-        sed -i 's/minifyEnabled false/minifyEnabled true/g' app/build.gradle
-        sed -i 's/shrinkResources false/shrinkResources true/g' app/build.gradle
-
-        echo ""
         echo "=============================================="
-        echo "  Ready to build!"
+        echo "  Patches Applied!"
         echo "=============================================="
 
-    - name: Build v7a APK with ProGuard
+    - name: Build v7a APK
       working-directory: fongmi-source
       run: |
-        echo "Building leanbackArmeabi_v7aDebug with ProGuard..."
-        ./gradlew assembleLeanbackArmeabi_v7aDebug --no-daemon 2>&1 | tail -50
+        echo "Building leanbackArmeabi_v7aDebug..."
+        ./gradlew assembleLeanbackArmeabi_v7aDebug --no-daemon 2>&1 | tail -30
 
     - name: Show APK Size
       working-directory: fongmi-source
