@@ -48,35 +48,39 @@ jobs:
         echo "  FongMi TV Minimalist - v7a Only Build"
         echo "=============================================="
 
-        # 1. AndroidManifest.xml
-        echo "[1/4] Applying AndroidManifest.xml..."
+        # Copy patch files
         cp ../fongmi-intent-patch/AndroidManifest.xml app/src/main/AndroidManifest.xml
-
-        # 2. ExternalPlayActivity
-        echo "[2/4] Creating ExternalPlayActivity..."
         mkdir -p app/src/main/java/com/fongmi/android/tv/ui/activity/
         cp ../fongmi-intent-patch/ExternalPlayActivity.java app/src/main/java/com/fongmi/android/tv/ui/activity/
-
-        # 3. Pre-configured Settings
-        echo "[3/4] Applying optimized Settings..."
         cp ../fongmi-intent-patch/Setting.java app/src/main/java/com/fongmi/android/tv/
-
-        # 4. ProGuard rules
-        echo "[4/4] Applying ProGuard rules..."
         cp ../fongmi-intent-patch/proguard-rules.pro app/proguard-rules.pro
 
         # Remove font files
         find app/src/main/res -name "*.ttf" -delete 2>/dev/null || true
         find app/src/main/res -name "*.otf" -delete 2>/dev/null || true
 
-        echo "=============================================="
-        echo "  Patches Applied!"
+        # Enable minification in build.gradle using Python
+        python3 << 'EOF'
+        import re
+
+        with open('app/build.gradle', 'r') as f:
+            content = f.read()
+
+        # Enable minify for all buildTypes
+        content = re.sub(r'minifyEnabled\s+false', 'minifyEnabled true', content)
+        content = re.sub(r'shrinkResources\s+false', 'shrinkResources true', content)
+
+        with open('app/build.gradle', 'w') as f:
+            f.write(content)
+
+        print("build.gradle modified: minifyEnabled=true, shrinkResources=true")
+        EOF
+
         echo "=============================================="
 
-    - name: Build v7a APK
+    - name: Build v7a APK with ProGuard
       working-directory: fongmi-source
       run: |
-        echo "Building leanbackArmeabi_v7aDebug..."
         ./gradlew assembleLeanbackArmeabi_v7aDebug --no-daemon 2>&1 | tail -30
 
     - name: Show APK Size
