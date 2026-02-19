@@ -1,0 +1,58 @@
+// Minimalist FongMi TV - v7a Only Build
+// Apply this to app/build.gradle
+
+android {
+    // Only compile armeabi-v7a (works on 32-bit and 64-bit devices)
+    defaultConfig {
+        ndk {
+            abiFilters 'armeabi-v7a'
+        }
+    }
+    
+    // Exclude Chinese resources
+    androidResources {
+        ignoreAssetsPattern '!zh:!*zh*:!*CN*:!*cn*'
+    }
+    
+    // Build only v7a native libs
+    externalNativeBuild {
+        cmake {
+            abiFilters 'armeabi-v7a'
+        }
+    }
+    
+    // Optimize APK size
+    buildTypes {
+        release {
+            minifyEnabled true
+            shrinkResources true
+            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+        }
+        debug {
+            minifyEnabled true
+            shrinkResources true
+            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+        }
+    }
+    
+    // Split APKs - disabled (single APK)
+    splits {
+        abi {
+            enable false
+        }
+    }
+    
+    // Language configuration - English only
+    productFlavors {
+        minimal {
+            dimension = "version"
+            resConfigs "en", "en_US"
+        }
+    }
+}
+
+// Remove unused dependencies for minimalist build
+// Comment out or remove these from dependencies block:
+// - com.google.android.gms:play-services-cast (Chromecast)
+// - com.google.android.support:wearable (Wear OS)
+// - Any Chinese-specific libraries

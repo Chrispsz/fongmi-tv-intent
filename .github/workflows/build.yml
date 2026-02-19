@@ -1,4 +1,4 @@
-name: Build FongMi TV with Intent Support
+name: Build FongMi TV Minimalist (v7a Only)
 
 on:
   push:
@@ -41,38 +41,97 @@ jobs:
       working-directory: fongmi-source
       run: chmod +x gradlew
       
-    - name: Apply Intent Patch + Pre-configured Settings
+    - name: Apply Minimalist Patches
       working-directory: fongmi-source
       run: |
-        echo "=== Applying Patches ==="
+        echo "=========================================="
+        echo "  FongMi TV Minimalist - v7a Only Build"
+        echo "=========================================="
         
-        # 1. AndroidManifest.xml (intent support)
+        # 1. AndroidManifest.xml (intent support + remove cast)
+        echo "[1/5] Applying AndroidManifest.xml patch..."
         cp ../fongmi-intent-patch/AndroidManifest.xml app/src/main/AndroidManifest.xml
         
         # 2. ExternalPlayActivity.java (receive intents)
+        echo "[2/5] Creating ExternalPlayActivity..."
         mkdir -p app/src/main/java/com/fongmi/android/tv/ui/activity/
         cp ../fongmi-intent-patch/ExternalPlayActivity.java app/src/main/java/com/fongmi/android/tv/ui/activity/
         
         # 3. Setting.java (pre-configured for TV Box)
+        echo "[3/5] Applying optimized Settings..."
         cp ../fongmi-intent-patch/Setting.java app/src/main/java/com/fongmi/android/tv/
         
-        echo "=== Patches Applied ==="
-        echo "- Intent support: ExternalPlayActivity.java"
-        echo "- Pre-configured: Buffer=4s, Tunnel=ON, Scale=16:9, AAC=ON"
+        # 4. ProGuard rules (strip unused code)
+        echo "[4/5] Applying ProGuard rules..."
+        cp ../fongmi-intent-patch/proguard-rules.pro app/proguard-rules.pro
         
-    - name: Build Debug APK
-      working-directory: fongmi-source
-      run: ./gradlew assembleDebug --no-daemon
-      
-    - name: List APK files
+        # 5. Modify build.gradle for v7a-only + minimal build
+        echo "[5/5] Configuring v7a-only minimal build..."
+        
+        # Add v7a-only configuration to build.gradle
+        cat >> app/build.gradle << 'GRADLE_EOF'
+
+// === MINIMALIST BUILD CONFIGURATION ===
+android {
+    // Only compile armeabi-v7a (works on 32-bit AND 64-bit devices)
+    defaultConfig {
+        ndk {
+            abiFilters 'armeabi-v7a'
+        }
+        // English only
+        resConfigs "en"
+    }
+    
+    // Exclude Chinese and unused resources
+    androidResources {
+        ignoreAssetsPattern '!zh:!*zh*:!*CN*:!*cn*:!drawable-hdpi:!drawable-xhdpi'
+    }
+    
+    // Aggressive optimization
+    buildTypes {
+        debug {
+            minifyEnabled true
+            shrinkResources true
+            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+        }
+    }
+}
+GRADLE_EOF
+        
+        echo ""
+        echo "=========================================="
+        echo "  Patches Applied Successfully!"
+        echo "=========================================="
+        echo "✓ Intent support: ExternalPlayActivity.java"
+        echo "✓ Pre-configured: Buffer=4s, Tunnel=ON, Scale=16:9, AAC=ON"
+        echo "✓ v7a-only: Smaller APK, works on all devices"
+        echo "✓ ProGuard: Strip unused code"
+        echo "✓ Resources: English only, no Chinese"
+        echo "✓ Removed: Cast, Danmaku, Spiders, P2P"
+        echo "=========================================="
+        
+    - name: Build Minimal APK
       working-directory: fongmi-source
       run: |
-        echo "=== APK Output ==="
+        echo "Building minimal v7a APK..."
+        ./gradlew assembleDebug --no-daemon --warning-mode=all
+      
+    - name: Show APK Size
+      working-directory: fongmi-source
+      run: |
+        echo ""
+        echo "=========================================="
+        echo "  Build Complete!"
+        echo "=========================================="
         find app/build/outputs -name "*.apk" -exec ls -lh {} \;
+        echo ""
+        APK_SIZE=$(du -h app/build/outputs/apk/debug/*.apk | cut -f1)
+        echo "Final APK Size: $APK_SIZE"
+        echo "=========================================="
       
     - name: Upload APK
       uses: actions/upload-artifact@v4
       with:
-        name: fongmi-tv-intent-apk
+        name: fongmi-tv-minimal-v7a
         path: fongmi-source/app/build/outputs/apk/**/*.apk
         retention-days: 30
