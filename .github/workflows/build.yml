@@ -49,75 +49,43 @@ jobs:
         echo "  PURE M3U8 PLAYER - No Extras"
         echo "=============================================="
 
-        echo "[1/6] Applying AndroidManifest.xml patch..."
+        echo "[1/5] Applying AndroidManifest.xml patch..."
         cp ../fongmi-intent-patch/AndroidManifest.xml app/src/main/AndroidManifest.xml
 
-        echo "[2/6] Creating ExternalPlayActivity..."
+        echo "[2/5] Creating ExternalPlayActivity..."
         mkdir -p app/src/main/java/com/fongmi/android/tv/ui/activity/
         cp ../fongmi-intent-patch/ExternalPlayActivity.java app/src/main/java/com/fongmi/android/tv/ui/activity/
 
-        echo "[3/6] Applying optimized Settings..."
+        echo "[3/5] Applying optimized Settings..."
         cp ../fongmi-intent-patch/Setting.java app/src/main/java/com/fongmi/android/tv/
 
-        echo "[4/6] Applying ProGuard rules..."
-        cp ../fongmi-intent-patch/proguard-rules.pro app/proguard-rules.pro
-
-        echo "[5/6] Removing subtitle and unused resources..."
+        echo "[4/5] Removing subtitle and unused resources..."
         find app/src/main/res -name "*.ttf" -delete 2>/dev/null || true
         find app/src/main/res -name "*.otf" -delete 2>/dev/null || true
         find app/src/main -name "*subtitle*" -type f -delete 2>/dev/null || true
         find app/src/main -name "*danmaku*" -type f -delete 2>/dev/null || true
 
-        echo "[6/6] Configuring v7a-only minimal build..."
+        echo "[5/5] Configuring v7a-only build..."
         echo "" >> app/build.gradle
-        echo "// === MINIMALIST BUILD CONFIGURATION ===" >> app/build.gradle
-        echo "android {" >> app/build.gradle
-        echo "    defaultConfig {" >> app/build.gradle
-        echo "        ndk { abiFilters 'armeabi-v7a' }" >> app/build.gradle
-        echo '        resConfigs "en"' >> app/build.gradle
-        echo "    }" >> app/build.gradle
-        echo "    androidResources {" >> app/build.gradle
-        echo "        ignoreAssetsPattern '!zh:!*zh*:!*CN*:!*cn*:!*.ttf:!*.otf'" >> app/build.gradle
-        echo "    }" >> app/build.gradle
-        echo "    buildTypes {" >> app/build.gradle
-        echo "        debug {" >> app/build.gradle
-        echo "            minifyEnabled true" >> app/build.gradle
-        echo "            shrinkResources true" >> app/build.gradle
-        echo "            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'" >> app/build.gradle
-        echo "        }" >> app/build.gradle
-        echo "    }" >> app/build.gradle
-        echo "}" >> app/build.gradle
+        echo "android.defaultConfig.ndk { abiFilters 'armeabi-v7a' }" >> app/build.gradle
+        echo 'android.defaultConfig.resConfigs "en"' >> app/build.gradle
 
         echo ""
         echo "=============================================="
         echo "  Patches Applied Successfully!"
         echo "=============================================="
-        echo "✓ Intent support: ExternalPlayActivity.java"
-        echo "✓ Pre-configured: Buffer=4s, Tunnel=ON, Scale=16:9, AAC=ON"
-        echo "✓ v7a-only: Smaller APK, works on all devices"
-        echo "✓ ProGuard: Strip unused code"
-        echo "✓ Resources: English only, no Chinese"
-        echo ""
-        echo "REMOVED:"
-        echo "  ✗ Cast/Chromecast"
-        echo "  ✗ Danmaku (Chinese comments)"
-        echo "  ✗ Subtitle system (.srt, .ass, fonts)"
-        echo "  ✗ Spiders, P2P, Torrent"
-        echo "  ✗ EPG, Update checker"
-        echo ""
-        echo "KEPT:"
-        echo "  ✓ ExoPlayer core"
-        echo "  ✓ HTTP streaming"
-        echo "  ✓ M3U8 parser"
-        echo "  ✓ Video decoders"
-        echo "  ✓ Closed Caption (embedded in stream)"
+        echo "✓ Intent support"
+        echo "✓ Pre-configured: Buffer=4s, Tunnel=ON, Scale=16:9"
+        echo "✓ v7a-only build"
+        echo "✓ English only"
+        echo "✓ Removed: fonts, subtitle files, danmaku files"
         echo "=============================================="
 
-    - name: Build Minimal APK
+    - name: Build v7a APK Only
       working-directory: fongmi-source
       run: |
-        echo "Building minimal v7a APK..."
-        ./gradlew assembleDebug --no-daemon --warning-mode=all
+        echo "Building leanback armeabi-v7a debug APK..."
+        ./gradlew assembleLeanbackArmeabi_v7aDebug --no-daemon
 
     - name: Show APK Size
       working-directory: fongmi-source
@@ -127,8 +95,7 @@ jobs:
         echo "  Build Complete!"
         echo "=============================================="
         find app/build/outputs -name "*.apk" -exec ls -lh {} \;
-        echo ""
-        APK_SIZE=$(du -h app/build/outputs/apk/debug/*.apk | cut -f1)
+        APK_SIZE=$(du -h app/build/outputs/apk/leanbackArmeabi_v7a/debug/*.apk 2>/dev/null | cut -f1)
         echo "Final APK Size: $APK_SIZE"
         echo "=============================================="
 
