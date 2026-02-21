@@ -1,47 +1,51 @@
-# Android TV Player
+# Stream Intent Handler for Android TV
 
-Minimalist media player for Android TV devices, optimized for external stream handling via Android Intent.
+A lightweight media player for Android TV, optimized for handling external streaming intents from third-party applications.
+
+[![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](LICENSE)
 
 ## Features
 
-- **Intent Support** - Open streams from external applications
-- **v7a Architecture** - Compatible with 32-bit and 64-bit devices
-- **Lightweight** - Reduced APK size with unnecessary features removed
-- **Pre-configured** - Optimal settings out of the box
+- 🔗 **Intent Support** - Handle streams from external applications
+- 📺 **Android TV Optimized** - Designed for TV interfaces
+- ⚡ **Lightweight** - Minimal APK size with essential features only
+- ⚙️ **Pre-configured** - Optimal playback settings out of the box
 
-## Removed Features
+## Supported Intents
 
-The following features were removed to reduce size:
-- Cast/DLNA
-- TV Guide (EPG)
-- External subtitles (.srt, .ass)
-- P2P protocols
-- Unused language resources
-
-## Default Settings
-
-```
-Buffer: 4 seconds
-Tunnel Mode: ON
-Scale: 16:9
-Background Play: OFF
-```
+| Intent Type | Action |
+|-------------|--------|
+| Video URLs | `ACTION_VIEW` |
+| Shared URLs | `ACTION_SEND` |
+| Custom Schemes | M3U8, RTMP, HTTP |
 
 ## Installation
 
-Download APK from [Actions](../../actions) and install on your device.
+Download the latest APK from [Releases](../../releases) or [Actions](../../actions).
 
 ## Compatibility
 
-- Android 5.0+
-- TV Boxes
-- Android TV devices
-- 32-bit and 64-bit architectures
+| Requirement | Version |
+|-------------|---------|
+| Android | 5.0+ (API 21) |
+| Architecture | ARMv7, ARM64 |
+| Form Factor | Android TV, TV Box |
 
 ## Building
 
-Build is triggered manually via Actions.
+```bash
+./gradlew assembleRelease
+```
+
+Build artifacts are available via GitHub Actions.
+
+## Technical Details
+
+Default playback configuration:
+- Buffer: 4 seconds
+- Tunnel Mode: Enabled
+- Aspect Ratio: 16:9
 
 ## Credits
 
-Based on open-source media player projects.
+Built on open-source media player frameworks.
